@@ -1,7 +1,13 @@
 package com.example.chatbotappv2.ui.chat
 
+import android.content.Context
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
+import android.net.Uri
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +16,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -20,6 +27,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -43,6 +51,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
@@ -50,6 +61,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.rememberAsyncImagePainter
 import com.example.chatbotappv2.R
 import com.example.chatbotappv2.data.FakeData
 import com.example.compose.ChatBotTheme
@@ -63,12 +75,15 @@ fun ChatScreen(
     chatViewModel: ChatViewModel = viewModel(factory = ChatViewModel.Factory)
 ) {
     val chatUiState by chatViewModel.chatUiState.collectAsState()
+    val context = LocalContext.current
     ChatScreen(
         modifier = modifier,
         onInputChange = chatViewModel::onInputChange,
         chatUiState = chatUiState,
-        messageSend = chatViewModel::sendMessage,
-        errorShown = chatViewModel::errorShown
+        messageSend = { chatViewModel.chatWithGemini(context) },
+        errorShown = chatViewModel::errorShown,
+        generateThumbnail = chatViewModel::generateThumbnail,
+        selectMedia = chatViewModel::setSelectedMediaUri,
     )
 }
 
@@ -78,7 +93,9 @@ internal fun ChatScreen(
     onInputChange: (String) -> Unit,
     chatUiState: ChatUiState,
     messageSend: () -> Unit,
-    errorShown: () -> Unit
+    errorShown: () -> Unit,
+    generateThumbnail: (Context, Uri) -> Unit,
+    selectMedia: (Uri) -> Unit
 ) {
     val mediumPadding = dimensionResource(R.dimen.padding_medium)
     val scope = rememberCoroutineScope()
@@ -129,7 +146,10 @@ internal fun ChatScreen(
                     input = chatUiState.input,
                     onInputChange = onInputChange,
                     isLoading = chatUiState.isLoading,
-                    messageSend = messageSend
+                    messageSend = messageSend,
+                    generateThumbnail = generateThumbnail,
+                    selectMedia = selectMedia,
+                    chatUiState = chatUiState
                 )
             }
         }
@@ -160,44 +180,97 @@ internal fun MessageInputLayout(
     input: String,
     onInputChange: (String) -> Unit,
     isLoading: Boolean,
-    messageSend: () -> Unit
+    messageSend: () -> Unit,
+    selectMedia: (Uri) -> Unit,
+    generateThumbnail: (Context, Uri) -> Unit,
+    chatUiState: ChatUiState
 ) {
     val smallPadding = dimensionResource(R.dimen.padding_small)
     val keyboardController = LocalSoftwareKeyboardController.current
+    val context = LocalContext.current
 
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(smallPadding)
-    ) {
-        OutlinedTextField(
-            modifier = Modifier.weight(1f),
-            onValueChange = onInputChange,
-            value = input,
-            maxLines = 2,
-            label = { Text(text = stringResource(R.string.ask_anything)) },
-            keyboardOptions = KeyboardOptions.Default.copy(
-                imeAction = ImeAction.Done
-            ),
-            keyboardActions = KeyboardActions(onDone = {
-                messageSend()
-                keyboardController?.hide() // Hides the keyboard
-            })
-        )
-        if (isLoading) {
-            CircularProgressIndicator()
-            return
-        }
-        IconButton(
-            onClick = {
-                messageSend()
-                keyboardController?.hide() // Hides the keyboard
+    val mediaPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            selectMedia(it)
+
+            // Check if the selected media is a video
+            val mimeType = context.contentResolver.getType(it)
+            if (mimeType?.startsWith("video") == true) {
+                generateThumbnail(context, it)
             }
+        }
+    }
+
+    Card {
+        Row(
+            modifier = Modifier.padding(bottom = smallPadding),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(smallPadding)
         ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.Send,
-                contentDescription = null,
+            IconButton(
+                onClick = { mediaPickerLauncher.launch("image/** video/**") }
+            ) {
+                Icon(imageVector = Icons.Default.Add, contentDescription = null)
+            }
+
+            OutlinedTextField(
+                modifier = Modifier.weight(1f),
+                onValueChange = onInputChange,
+                value = input,
+                maxLines = 2,
+                label = { Text(text = stringResource(R.string.ask_anything)) },
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(onDone = {
+                    messageSend()
+                    keyboardController?.hide() // Hides the keyboard
+                })
             )
+
+            if (isLoading) {
+                CircularProgressIndicator()
+            } else {
+                IconButton(
+                    onClick = {
+                        messageSend()
+                        keyboardController?.hide() // Hides the keyboard
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Send,
+                        contentDescription = null,
+                    )
+                }
+            }
+        }
+
+        chatUiState.selectedMediaUri?.let { uri ->
+            if (chatUiState.thumbnail != null) {
+                // Display video thumbnail
+                Image(
+                    bitmap = chatUiState.thumbnail.asImageBitmap(),
+                    contentDescription = "Selected Video Thumbnail",
+                    modifier = Modifier
+                        .padding(bottom = smallPadding, start = smallPadding)
+                        .size(80.dp)
+                        .clickable { /* Full screen view or more actions */ },
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                // Display image preview
+                Image(
+                    painter = rememberAsyncImagePainter(model = uri),
+                    contentDescription = "Selected Image",
+                    modifier = Modifier
+                        .padding(bottom = smallPadding, start = smallPadding)
+                        .size(80.dp)
+                        .clickable { /* Full screen view or more actions */ },
+                    contentScale = ContentScale.Crop
+                )
+            }
         }
     }
 }
@@ -262,7 +335,9 @@ internal fun ChatScreenPreview() {
             chatUiState = ChatUiState(messageList = FakeData.loadMessageList()),
             onInputChange = {},
             messageSend = {},
-            errorShown = {}
+            errorShown = {},
+            generateThumbnail = { _, _ -> },
+            selectMedia = {}
         )
     }
 }
@@ -275,7 +350,9 @@ internal fun ChatScreenEmptyPreview() {
             chatUiState = ChatUiState(),
             onInputChange = {},
             messageSend = {},
-            errorShown = {}
+            errorShown = {},
+            generateThumbnail = { _, _ -> },
+            selectMedia = {}
         )
     }
 }
@@ -288,7 +365,9 @@ internal fun ChatScreenDarkPreview() {
             chatUiState = ChatUiState(messageList = FakeData.loadMessageList()),
             onInputChange = {},
             messageSend = {},
-            errorShown = {}
+            errorShown = {},
+            generateThumbnail = { _, _ -> },
+            selectMedia = {}
         )
     }
 }
@@ -301,7 +380,9 @@ internal fun ChatScreenLoadingPreview() {
             chatUiState = ChatUiState(isLoading = true),
             onInputChange = {},
             messageSend = {},
-            errorShown = {}
+            errorShown = {},
+            generateThumbnail = { _, _ -> },
+            selectMedia = {}
         )
     }
 }
@@ -314,7 +395,9 @@ internal fun ChatScreenErrorPreview() {
             chatUiState = ChatUiState(errorMessage = "Something went wrong"),
             onInputChange = {},
             messageSend = {},
-            errorShown = {}
+            errorShown = {},
+            generateThumbnail = { _, _ -> },
+            selectMedia = {}
         )
     }
 }

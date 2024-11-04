@@ -6,6 +6,7 @@ plugins {
 }
 
 android {
+    val apiKey: String = project.findProperty("API_KEY") as String? ?: ""
     namespace = "com.example.chatbotappv2"
     compileSdk = 34
 
@@ -17,6 +18,7 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "API_KEY", "\"$apiKey\"")
     }
 
     buildTypes {
@@ -37,6 +39,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -54,6 +57,8 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:$nav_version")
     // ViewModel utilities for Compose
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycle_version")
+    implementation("com.google.ai.client.generativeai:generativeai:0.7.0")
+    implementation("io.coil-kt:coil-compose:2.2.2") // Latest version as of this answer
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
