@@ -210,7 +210,7 @@ internal fun MessageInputLayout(
             horizontalArrangement = Arrangement.spacedBy(smallPadding)
         ) {
             IconButton(
-                onClick = { mediaPickerLauncher.launch("image/** video/**") }
+                onClick = { mediaPickerLauncher.launch("image/* video/*") }
             ) {
                 Icon(imageVector = Icons.Default.Add, contentDescription = null)
             }

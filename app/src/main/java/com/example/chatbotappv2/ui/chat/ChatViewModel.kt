@@ -31,7 +31,7 @@ import java.io.IOException
 
 private const val TAG = "ChatViewModel"
 private const val modelName = "gemini-1.5-flash-001"
-private const val apiKey = "AIzaSyAwKSOk62qnqVLOSzS3s3Sm0j2I4UZJ39I"
+private const val apiKey = "YOUR_API_KEY"
 private val model = GenerativeModel(
     modelName = modelName,
     apiKey = apiKey
