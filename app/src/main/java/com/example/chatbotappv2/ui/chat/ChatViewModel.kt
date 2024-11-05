@@ -12,9 +12,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.chatbotappv2.ChatBotApp
+import com.example.chatbotappv2.data.ChatRepo
 import com.example.chatbotappv2.data.UserPreferencesRepository
-import com.example.chatbotappv2.network.ChatBotAPI
-import com.example.chatbotappv2.network.req.ChatReq
 import com.example.chatbotappv2.util.JsonConverter
 import com.google.ai.client.generativeai.Chat
 import com.google.ai.client.generativeai.GenerativeModel
@@ -38,7 +37,8 @@ private val model = GenerativeModel(
 )
 
 class ChatViewModel(
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val userPreferencesRepository: UserPreferencesRepository,
+    private val chatRepo: ChatRepo
 ) : ViewModel() {
     private var _chatUiState = MutableStateFlow(ChatUiState())
     val chatUiState = _chatUiState.asStateFlow()
@@ -169,8 +169,7 @@ class ChatViewModel(
             delay(3000) //Stimulate network call
             try {
                 val accToken = userPreferencesRepository.accToken.first()
-                val body = ChatReq(question = input)
-                val apiRes = ChatBotAPI.retrofitService.chat(token = "Bearer $accToken", req = body)
+                val apiRes = chatRepo.chat(_chatUiState.value.input, accToken)
                 Log.i(TAG, apiRes.toString())
                 apiRes.data?.let {
                     messageList.add(Message(message = it.res, role = Role.model))
@@ -218,7 +217,7 @@ class ChatViewModel(
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val application = (this[APPLICATION_KEY] as ChatBotApp)
-                ChatViewModel(application.userPreferencesRepository)
+                ChatViewModel(application.userPreferencesRepository, application.container.chatRepo)
             }
         }
     }

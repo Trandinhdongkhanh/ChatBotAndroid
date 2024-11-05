@@ -10,7 +10,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.chatbotappv2.ChatBotApp
 import com.example.chatbotappv2.data.UserPreferencesRepository
-import com.example.chatbotappv2.network.ChatBotAPI
+import com.example.chatbotappv2.data.UserRepo
 import com.example.chatbotappv2.network.req.LoginReq
 import com.example.chatbotappv2.util.JsonConverter
 import kotlinx.coroutines.delay
@@ -24,7 +24,8 @@ import retrofit2.HttpException
 private const val TAG = "SignInViewModel"
 
 class SignInViewModel(
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val userPreferencesRepository: UserPreferencesRepository,
+    private val userRepo: UserRepo
 ) : ViewModel() {
     private var _signInUiState = MutableStateFlow(SignInUiState())
     val signInUiState = _signInUiState.asStateFlow()
@@ -53,7 +54,7 @@ class SignInViewModel(
             )
             delay(3000) //Stimulate network call
             try {
-                val apiRes = ChatBotAPI.retrofitService.login(req = req)
+                val apiRes = userRepo.login(_signInUiState.value.username, _signInUiState.value.password)
                 Log.i(TAG, apiRes.toString())
 
                 apiRes.data?.let {
@@ -101,7 +102,7 @@ class SignInViewModel(
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val application = (this[APPLICATION_KEY] as ChatBotApp)
-                SignInViewModel(application.userPreferencesRepository)
+                SignInViewModel(application.userPreferencesRepository, application.container.userRepo)
             }
         }
     }

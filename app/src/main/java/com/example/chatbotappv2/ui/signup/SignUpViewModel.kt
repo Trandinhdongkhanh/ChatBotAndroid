@@ -2,8 +2,13 @@ package com.example.chatbotappv2.ui.signup
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
-import com.example.chatbotappv2.network.ChatBotAPI
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.chatbotappv2.ChatBotApp
+import com.example.chatbotappv2.data.UserRepo
 import com.example.chatbotappv2.network.req.SignUpReq
 import com.example.chatbotappv2.util.JsonConverter
 import kotlinx.coroutines.delay
@@ -16,7 +21,9 @@ import java.io.IOException
 
 private const val TAG = "SignUpViewModel"
 
-class SignUpViewModel : ViewModel() {
+class SignUpViewModel(
+    private val userRepo: UserRepo
+) : ViewModel() {
     private var _signUpUiState = MutableStateFlow(SignUpUiState())
     val signUpUiState = _signUpUiState.asStateFlow()
 
@@ -57,7 +64,11 @@ class SignUpViewModel : ViewModel() {
                     fullName = _signUpUiState.value.fullName
                 )
 
-                val apiRes = ChatBotAPI.retrofitService.signUp(req = req)
+                val apiRes = userRepo.signUpNewUser(
+                    _signUpUiState.value.username,
+                    _signUpUiState.value.password,
+                    _signUpUiState.value.fullName
+                )
                 Log.i(TAG, apiRes.toString())
                 _signUpUiState.value = SignUpUiState(isSignedUp = true)
                 Log.i(TAG, "Login success")
@@ -86,6 +97,15 @@ class SignUpViewModel : ViewModel() {
                         isLoading = false
                     )
                 }
+            }
+        }
+    }
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                val application = (this[APPLICATION_KEY] as ChatBotApp)
+                SignUpViewModel(application.container.userRepo)
             }
         }
     }
