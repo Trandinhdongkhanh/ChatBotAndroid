@@ -1,9 +1,9 @@
 package com.example.chatbotappv2.data
 
 import com.example.chatbotappv2.network.ChatBotApiService
-import com.example.chatbotappv2.network.req.ChatReq
-import com.example.chatbotappv2.network.res.ApiRes
-import com.example.chatbotappv2.network.res.ChatSuccess
+import com.example.chatbotappv2.model.req.ChatReq
+import com.example.chatbotappv2.model.res.ApiRes
+import com.example.chatbotappv2.model.res.ChatSuccess
 
 interface ChatRepo {
     suspend fun chat(input: String, accToken: String): ApiRes<ChatSuccess>

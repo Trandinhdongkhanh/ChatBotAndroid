@@ -61,9 +61,12 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import com.example.chatbotappv2.R
-import com.example.chatbotappv2.data.FakeData
+import com.example.chatbotappv2.component.ChatTopBar
+import com.example.chatbotappv2.fake.FakeDataDatasource
 import com.example.compose.ChatBotTheme
 import kotlinx.coroutines.launch
 
@@ -261,8 +264,11 @@ internal fun MessageInputLayout(
                 )
             } else {
                 // Display image preview
-                Image(
-                    painter = rememberAsyncImagePainter(model = uri),
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .crossfade(true)
+                        .data(uri)
+                        .build(),
                     contentDescription = "Selected Image",
                     modifier = Modifier
                         .padding(bottom = smallPadding, start = smallPadding)
@@ -270,6 +276,15 @@ internal fun MessageInputLayout(
                         .clickable { /* Full screen view or more actions */ },
                     contentScale = ContentScale.Crop
                 )
+//                Image(
+//                    painter = rememberAsyncImagePainter(model = uri),
+//                    contentDescription = "Selected Image",
+//                    modifier = Modifier
+//                        .padding(bottom = smallPadding, start = smallPadding)
+//                        .size(80.dp)
+//                        .clickable { /* Full screen view or more actions */ },
+//                    contentScale = ContentScale.Crop
+//                )
             }
         }
     }
@@ -312,27 +327,13 @@ internal fun MessageItem(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-internal fun ChatTopBar(modifier: Modifier = Modifier) {
-    CenterAlignedTopAppBar(
-        modifier = modifier,
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            titleContentColor = MaterialTheme.colorScheme.primary,
-        ),
-        title = {
-            Text(stringResource(R.string.chat_bot))
-        }
-    )
-}
 
 @Preview(name = "ChatScreenPreview", showBackground = true)
 @Composable
 internal fun ChatScreenPreview() {
     ChatBotTheme {
         ChatScreen(
-            chatUiState = ChatUiState(messageList = FakeData.loadMessageList()),
+            chatUiState = ChatUiState(messageList = FakeDataDatasource.loadMessageList()),
             onInputChange = {},
             messageSend = {},
             errorShown = {},
@@ -362,7 +363,7 @@ internal fun ChatScreenEmptyPreview() {
 internal fun ChatScreenDarkPreview() {
     ChatBotTheme(darkTheme = true) {
         ChatScreen(
-            chatUiState = ChatUiState(messageList = FakeData.loadMessageList()),
+            chatUiState = ChatUiState(messageList = FakeDataDatasource.loadMessageList()),
             onInputChange = {},
             messageSend = {},
             errorShown = {},

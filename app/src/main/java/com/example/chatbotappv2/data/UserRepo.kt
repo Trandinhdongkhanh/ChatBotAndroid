@@ -1,11 +1,11 @@
 package com.example.chatbotappv2.data
 
 import com.example.chatbotappv2.network.ChatBotApiService
-import com.example.chatbotappv2.network.req.LoginReq
-import com.example.chatbotappv2.network.req.SignUpReq
-import com.example.chatbotappv2.network.res.ApiRes
-import com.example.chatbotappv2.network.res.LoginSuccess
-import com.example.chatbotappv2.network.res.SignUpSuccess
+import com.example.chatbotappv2.model.req.LoginReq
+import com.example.chatbotappv2.model.req.SignUpReq
+import com.example.chatbotappv2.model.res.ApiRes
+import com.example.chatbotappv2.model.res.LoginSuccess
+import com.example.chatbotappv2.model.res.SignUpSuccess
 
 interface UserRepo {
     suspend fun signUpNewUser(

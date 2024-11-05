@@ -9,7 +9,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.chatbotappv2.ChatBotApp
 import com.example.chatbotappv2.data.UserRepo
-import com.example.chatbotappv2.network.req.SignUpReq
+import com.example.chatbotappv2.model.req.SignUpReq
 import com.example.chatbotappv2.util.JsonConverter
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow

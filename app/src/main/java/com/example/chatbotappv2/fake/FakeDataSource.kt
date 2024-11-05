@@ -1,9 +1,9 @@
-package com.example.chatbotappv2.data
+package com.example.chatbotappv2.fake
 
 import com.example.chatbotappv2.ui.chat.Message
 import com.example.chatbotappv2.ui.chat.Role
 
-class FakeData {
+class FakeDataDatasource {
     companion object {
         fun loadMessageList(): List<Message> {
             return listOf(

@@ -1,4 +1,4 @@
-package com.example.chatbotappv2.network.res
+package com.example.chatbotappv2.model.res
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
